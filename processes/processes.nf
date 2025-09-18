@@ -233,7 +233,7 @@ process severusTumorOnly {
     script:
         """
         tabix ${phasedVcf}
-        severus --target-bam ${tumorBam} --out-dir severus_out_15 -t ${task.cpus} --phasing-vcf ${phasedVcf} \
+        severus --target-bam ${tumorBam} --out-dir severus_out -t ${task.cpus} --phasing-vcf ${phasedVcf} \
             --vntr-bed ${vntrBed} --PON ${panelOfNormals} --output-read-ids --min-reference-flank 0 --single-bp --resolve-overlaps --max-unmapped-seq 7000 --between-junction-ins 
         """
 }
@@ -267,7 +267,7 @@ process severusTumorNormal {
 process wakhanHapcorrect {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:364f3e6'
+    container 'docker://gokcekeskus/wakhan:55692a6'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -292,7 +292,7 @@ process wakhanHapcorrect {
 
 process wakhanCNA {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:364f3e6'
+    container 'docker://gokcekeskus/wakhan:55692a6'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -321,7 +321,7 @@ process wakhanCNA {
 process wakhanHapcorrectTN {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:364f3e6'
+    container 'docker://gokcekeskus/wakhan:55692a6'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -346,7 +346,7 @@ process wakhanHapcorrectTN {
 
 process wakhanCNATN {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:364f3e6'
+    container 'docker://gokcekeskus/wakhan:55692a6'
     cpus 16
     memory '64 G'
     time '14.h'
