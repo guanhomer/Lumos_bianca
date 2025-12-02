@@ -267,7 +267,7 @@ process severusTumorNormal {
 process wakhanHapcorrect {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:55692a6'
+    container 'docker://gokcekeskus/wakhan:60c7c44'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -286,13 +286,13 @@ process wakhanHapcorrect {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --loh-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
 process wakhanCNA {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:55692a6'
+    container 'docker://gokcekeskus/wakhan:60c7c44'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -311,7 +311,7 @@ process wakhanCNA {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --use-sv-haplotypes --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --loh-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --use-sv-haplotypes --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         mkdir -p wakhan_out
 	find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
 	find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
@@ -321,7 +321,7 @@ process wakhanCNA {
 process wakhanHapcorrectTN {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:55692a6'
+    container 'docker://gokcekeskus/wakhan:60c7c44'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -340,13 +340,13 @@ process wakhanHapcorrectTN {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --loh-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
 process wakhanCNATN {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:55692a6'
+    container 'docker://gokcekeskus/wakhan:60c7c44'
     cpus 16
     memory '64 G'
     time '14.h'
@@ -365,7 +365,7 @@ process wakhanCNATN {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --use-sv-haplotypes --genome-name Sample --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --loh-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --use-sv-haplotypes --genome-name Sample --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         mkdir -p wakhan_out
         find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
         find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
