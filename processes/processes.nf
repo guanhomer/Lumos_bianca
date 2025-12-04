@@ -112,7 +112,7 @@ process haplotagWhatshap {
 }
 
 process modkitDMR{
-        conda 'bioconda::ont-modkit'
+        container 'docker://mkolmogo/modkit:0.4.1'
         cpus 28
         memory '64 G'
         time '10.h'
@@ -136,7 +136,7 @@ process modkitDMR{
 }
 
 process modkitStats{
-        conda 'bioconda::ont-modkit'
+        container 'docker://mkolmogo/modkit:0.4.1'
         cpus 28
         memory '64 G'
         time '10.h'
@@ -158,7 +158,7 @@ process modkitStats{
 }
 
 process modkitPileupAllele{
-        conda 'bioconda::ont-modkit bioconda::samtools bioconda::htslib'
+        container 'docker://mkolmogo/modkit:0.4.1'
         cpus 28
         memory '64 G'
         time '10.h'
@@ -185,7 +185,7 @@ process modkitPileupAllele{
 
 
 process modkitPileup{
-        conda 'bioconda::ont-modkit bioconda::samtools bioconda::htslib bioconda::bedtools'
+        container 'docker://mkolmogo/modkit:0.4.1'
         cpus 28
         memory '64 G'
         time '10.h'
