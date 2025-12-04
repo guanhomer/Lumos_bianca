@@ -21,7 +21,7 @@ Currently, the pipeline includes the following steps:
 
 ```bash
 module load nextflow
-nextflow run tumorNormalONT.nf   --reads_tumor tumor.bam   --reads_normal normal.bam   --reference hg38.fasta   --outdir results   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
+nextflow run tumorNormalONT.nf   --tumor_reads tumor.bam   --normal_reads normal.bam   --reference hg38.fasta   --outdir results   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
 ```
 
 ### Tumor-Only Run
@@ -37,27 +37,28 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --ou
 
 ## 📥 Required Inputs
 
-### Common
-
-```
---reads_tumor   Path to tumor BAM file(s), must be indexed  
---outdir        Output directory  
---reference     Reference FASTA  
---vntr          BED file of tandem repeats (must be ordered)(e.g. ./annot/human_GRCh38_no_alt_analysis_set.trf.bed)
---clair3_model  Path to Clair3 model  
---cpgs          CpG island BED file required in sv_cna_dmr and all modes (e.g. ./annot/hg38_cpg_cleaned.bed)
-```
-
 ### Tumor–Normal Only
 
 ```
---reads_normal  Path to normal BAM file (must be indexed)
+--normal_reads  Path to normal BAM file (must be indexed)
+--tumor_reads   Path to tumor BAM file (must be indexed)
 ```
 
 ### Tumor-Only Only
 
 ```
+--reads         Path to tumor BAM file (must be indexed)
 --sv_pon        Panel of Normals file (e.g. ./annot/PoN_1000G_hg38_extended.tsv.gz)
+```
+
+### Common
+
+```
+--outdir        Output directory  
+--reference     Reference FASTA  
+--vntr          BED file of tandem repeats (must be ordered)(e.g. ./annot/human_GRCh38_no_alt_analysis_set.trf.bed)
+--clair3_model  Path to Clair3 model  
+--cpgs          CpG island BED file required in sv_cna_dmr and all modes (e.g. ./annot/hg38_cpg_cleaned.bed)
 ```
 
 ---
