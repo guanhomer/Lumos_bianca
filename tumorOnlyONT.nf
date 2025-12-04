@@ -120,7 +120,7 @@ workflow tumorOnlyOntWorkflow {
     def wakhanDataOutputCh = Channel.empty()
     def wakhanFullOutputCh  = Channel.empty()
     def hp1Ch = Channel.empty(); def hp2Ch = Channel.empty()
-    def pileCh = Channel.empty(); def dmrCh = Channel.empty()
+    def pileCh = Channel.empty(); def pile2Ch = Channel.empty(); def dmrCh = Channel.empty()
     def s1Ch = Channel.empty();  def s2Ch  = Channel.empty(); def s3Ch = Channel.empty()
     def deepSomCh = Channel.empty()
 
