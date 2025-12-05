@@ -292,22 +292,22 @@ workflow {
     )
 
     publish:
-	phasedVcf              = out.phasedVcf
-	rephasedVcf            = out.rephasedVcf
-	haplotaggedBam         = out.haplotaggedBam
-	haplotaggedBamidx      = out.haplotaggedBamidx
-	severusFullOutput      = out.severusFullOutput
-	wakhanFullOutput       = out.wakhanFullOutput
+        phasedVcf              = out.phasedVcf
+        rephasedVcf            = out.rephasedVcf
+        haplotaggedBam         = out.haplotaggedBam
+        haplotaggedBamidx      = out.haplotaggedBamidx
+        severusFullOutput      = out.severusFullOutput
+        wakhanFullOutput       = out.wakhanFullOutput
         wakhanDataOutput       = out.wakhanDataOutput
-	deepsomaticOutput      = out.deepsomaticOutput
-	modkitPileupAlleleBED1 = out.modkitPileupAlleleBED1
-	modkitPileupAlleleBED2 = out.modkitPileupAlleleBED2
-	modkitPileupOut        = out.modkitPileupOut
-	modkitPileupClean      = out.modkitPileup2Out
-	modkitDMROut           = out.modkitDMROut
-	modkitStatsOut         = out.modkitStatsOut
-	modkitStats2Out        = out.modkitStats2Out
-	modkitStats3Out        = out.modkitStats3Out
+        deepsomaticOutput      = out.deepsomaticOutput
+        modkitPileupAlleleBED1 = out.modkitPileupAlleleBED1
+        modkitPileupAlleleBED2 = out.modkitPileupAlleleBED2
+        modkitPileupOut        = out.modkitPileupOut
+        modkitPileupClean      = out.modkitPileup2Out
+        modkitDMROut           = out.modkitDMROut
+        modkitStatsOut         = out.modkitStatsOut
+        modkitStats2Out        = out.modkitStats2Out
+        modkitStats3Out        = out.modkitStats3Out
 	
 }
   output {
