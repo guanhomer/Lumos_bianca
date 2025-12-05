@@ -1,6 +1,6 @@
 # Lumos: Long-Read Somatic Variant Calling
 
-This Nextflow (v25.04.2) workflow implements a full long-read somatic variant analysis pipeline.  
+This Nextflow (v25.10.0) workflow implements a full long-read somatic variant analysis pipeline.  
 It supports tumor–normal and tumor-only configurations, running on [Biowulf](https://hpc.nih.gov/) (Slurm scheduler).  
 
 Currently, the pipeline includes the following steps:
@@ -20,15 +20,15 @@ Currently, the pipeline includes the following steps:
 ### Tumor–Normal Run
 
 ```bash
-module load nextflow
-nextflow run tumorNormalONT.nf   --tumor_reads tumor.bam   --normal_reads normal.bam   --reference hg38.fasta   --outdir results   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
+module load nextflow/25.10.0
+nextflow run tumorNormalONT.nf   --tumor_reads tumor.bam   --normal_reads normal.bam   --reference hg38.fasta   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
 ```
 
 ### Tumor-Only Run
 
 ```bash
-module load nextflow
-nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --outdir results   --vntr vntr.bed   --sv_pon PoN_1000G_hg38.tsv.gz   --clair3_model clair3_models/ont --cpgs cpgs.bed
+module load nextflow/25.10.0
+nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vntr vntr.bed   --sv_pon PoN_1000G_hg38.tsv.gz   --clair3_model clair3_models/ont --cpgs cpgs.bed
 ```
 
 > **Tip:** Always run inside an interactive session or with `sbatch` — **not** on the Biowulf head node.  
@@ -51,10 +51,9 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --ou
 --sv_pon        Panel of Normals file (e.g. ./annot/PoN_1000G_hg38_extended.tsv.gz)
 ```
 
-### Common
+### For both modes
 
 ```
---outdir        Output directory  
 --reference     Reference FASTA  
 --vntr          BED file of tandem repeats (must be ordered)(e.g. ./annot/human_GRCh38_no_alt_analysis_set.trf.bed)
 --clair3_model  Path to Clair3 model  
@@ -87,9 +86,13 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --ou
     `--reads_tumor 'BAM_DIR/*bam'`
 - **Multiple runs:** Each Nextflow run must be launched from a unique working directory.  
   Nextflow creates a `work/` folder and `.nextflow.log` inside the run directory.
-- **Resuming after failure:** Use the `-resume` flag (single dash).  
+- **Resuming after failure:** Use the `-resume` flag (note single dash).  
   The workflow will attempt to reuse existing results.  
   Resume must be launched from the *same* working directory.  
+- **Output directory change** By default, final outputs will be available in `lumos_out` directory.
+  You can change it by adding `-output-dir XXX` argument (note single dash)
+- **Nexflow version** Note that the workflow has been tested with Nextflow v25.10.0,
+  and may not run with other versions due to recent synthax changes.
 
 ---
 

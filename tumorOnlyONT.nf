@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl     = 2
-nextflow.preview.output = true   
+//nextflow.preview.output = true   //uncomment for for 25.04.2
 
 
 include { alignMinimap2; callClair3; phaseLongphase; deepsomaticTumorOnly;
