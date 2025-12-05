@@ -25,19 +25,19 @@ process REF_INDEX {
   """
 }
 
-// ---------- user params ----------
-params.readsT         = params.readsT          ?: null
-params.readsN         = params.readsN          ?: null   
-params.prealignedBam  = params.prealignedBam   ?: null
-params.prealignedBamN = params.prealignedBamN  ?: null     
-params.reference      = params.reference       ?: null
-params.vntr           = params.vntr            ?: null
-params.clair3_model   = params.clair3_model    ?: null
-params.cpgs           = params.cpgs            ?: null
-params.bam            = params.bam             ?: null          // used when --alignment 'false'
-params.bai            = params.bai             ?: null          // used when --alignment 'false'
-params.mode           = params.mode            ?: 'all'         // all | sv_cna | sv_cna_dmr
-params.alignment      = params.alignment       ?: 'true'        // 'true' | 'false'
+// ---------- default user params ----------
+params.readsT         = null
+params.readsN         = null   
+params.prealignedBam  = null
+params.prealignedBamN = null     
+params.reference      = null
+params.vntr           = null
+params.clair3_model   = null
+params.cpgs           = null
+params.bam            = null          // used when --alignment 'false'
+params.bai            = null          // used when --alignment 'false'
+params.mode           = 'all'         // all | sv_cna | sv_cna_dmr
+params.alignment      = 'true'        // 'true' | 'false'
 
 // ---------- subworkflow with alignment toggle + modes ----------
 workflow tumorNormalOntWorkflow {

@@ -68,12 +68,13 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 --mode       sv_cna       Run only SV and CNA calling  
              sv_cna_dmr   Run SV, CNA, and DMR calling  
              all          Run SV, CNA, DMR, and somatic SNV calling (default)
-
---aligned    Provide pre-aligned BAM files. Use:
-             --tumor_bam, --tumor_bai
-             --normal_bam, --normal_bai
-             instead of --reads_tumor / --reads_normal
 ```
+
+Pre-existing bam alignment, use:
+```
+--alignment false --bam BAM --bai BAI
+```
+instead of --reads
 
 ---
 
