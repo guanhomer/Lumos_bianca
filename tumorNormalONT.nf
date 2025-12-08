@@ -233,13 +233,15 @@ workflow tumorNormalOntWorkflow {
 
     // 9) DeepSomatic only in 'all'
     if (RUN_DEEPSOM) {
-      deepsomaticTumorOnly(
+      deepsomaticTumorNormal(
         bamCh,
         baiCh,
+        NbamCh,
+        NbaiCh,
         reference,
         refIdxCh
       )
-      deepSomCh = deepsomaticTumorOnly.out.deepsomaticOutput
+      deepSomCh = deepsomaticTumorNormal.out.deepsomaticOutput
     }
 
   emit:
