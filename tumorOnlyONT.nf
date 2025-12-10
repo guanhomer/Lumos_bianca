@@ -34,6 +34,7 @@ params.bam = null          // used when --alignment 'false'
 params.bai = null          // used when --alignment 'false'
 params.mode = 'all'         // all | sv_cna | sv_cna_dmr
 params.alignment = 'true'        // 'true' | 'false'
+params.cosmic = null
 
 // ---------- subworkflow with alignment toggle + modes ----------
 workflow tumorOnlyOntWorkflow {

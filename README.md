@@ -68,6 +68,7 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 --mode       sv_cna       Run only SV and CNA calling  
              sv_cna_dmr   Run SV, CNA, and DMR calling  
              all          Run SV, CNA, DMR, and somatic SNV calling (default)
+--cosmic        Path to COSMIC genes in tsv format for Wakhan visualization
 ```
 
 Pre-existing bam alignment, use:
