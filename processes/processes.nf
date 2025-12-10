@@ -264,10 +264,12 @@ process severusTumorNormal {
         """
 }
 
+def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_14f2192'
+
 process wakhanHapcorrect {
     def genomeName = "Sample"
 
-    container 'docker://mkolmogo/wakhan:dev_89b11d6'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -292,7 +294,7 @@ process wakhanHapcorrect {
 
 process wakhanCNA {
     def genomeName = "Sample"
-    container 'docker://mkolmogo/wakhan:dev_89b11d6'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -321,7 +323,7 @@ process wakhanCNA {
 process wakhanHapcorrectTN {
     def genomeName = "Sample"
 
-    container 'docker://mkolmogo/wakhan:dev_89b11d6'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -346,7 +348,7 @@ process wakhanHapcorrectTN {
 
 process wakhanCNATN {
     def genomeName = "Sample"
-    container 'docker://mkolmogo/wakhan:dev_89b11d6'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
