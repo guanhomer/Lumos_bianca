@@ -271,7 +271,7 @@ process severusTumorNormal {
         """
 }
 
-def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_14f2192'
+def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_3ddeba0'
 def WAKHAN_BIN = 50000
 
 process wakhanHapcorrect {
@@ -313,21 +313,19 @@ process wakhanCNA {
         path reference
         path tumorSmallPhasedVcf
         path severusSomaticVcf
-	    path hapcorrect_out
+	    path hapcorrect_out, stageAs: "hapcorrect_input/*"
 
     output:
-        path "wakhan_out", emit: wakhanOutput
+        path "wakhan_cna", emit: wakhanOutput
 
     script:
         def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
+        cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --use-sv-haplotypes --out-dir-plots . --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
+          --genome-name Sample --use-sv-haplotypes --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
           --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
-        mkdir -p wakhan_out
-        find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
-        find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
 	"""
 }
 
@@ -370,20 +368,19 @@ process wakhanCNATN {
         path reference
         path tumorSmallPhasedVcf
         path severusSomaticVcf
-        path hapcorrect_out
+        path hapcorrect_out, stageAs: "hapcorrect_input/*"
 
     output:
-        path "wakhan_out", emit: wakhanOutput
+        path "wakhan_cna", emit: wakhanOutput
+
     script:
         def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
+        cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --use-sv-haplotypes --genome-name Sample --out-dir-plots . --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
+          --use-sv-haplotypes --genome-name Sample --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
           --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
-        mkdir -p wakhan_out
-        find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
-        find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
 	"""
 }
 
