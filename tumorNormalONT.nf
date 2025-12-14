@@ -54,6 +54,7 @@ workflow tumorNormalOntWorkflow {
     vntrAnnotation
     clair3Model
     cpgs
+    cosmic
 
   main:
     def RUN_ALL     = (params.mode == 'all')
@@ -162,7 +163,8 @@ workflow tumorNormalOntWorkflow {
         reference,
         wakhanHapcorrectTN.out.rephasedVcf,
         severusTumorNormal.out.severusSomaticVcf,
-        wakhanHapcorrectTN.out.wakhanHPOutput
+        wakhanHapcorrectTN.out.wakhanHPOutput,
+        cosmic
       )
 
       severusSomaticVcfCh = severusTumorNormal.out.severusSomaticVcf
@@ -322,8 +324,12 @@ workflow {
     clair3_ch = Channel.fromPath(params.clair3_model, checkIfExists:true)
     cpgs_ch   = Channel.fromPath(params.cpgs,         checkIfExists:true)
 
+    cosmic_ch = params.cosmic 
+        ? Channel.fromPath(params.cosmic, checkIfExists:true)
+        : Channel.fromPath(file('NOFILE'))
+
     out = tumorNormalOntWorkflow(
-      readsT_ch, readsN_ch, pre_bam_ch, pre_bai_ch, pre_bamN_ch, pre_baiN_ch, ref_ch, vntr_ch, clair3_ch, cpgs_ch
+      readsT_ch, readsN_ch, pre_bam_ch, pre_bai_ch, pre_bamN_ch, pre_baiN_ch, ref_ch, vntr_ch, clair3_ch, cpgs_ch, cosmic_ch
     )
 
     publish:

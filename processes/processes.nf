@@ -271,7 +271,7 @@ process severusTumorNormal {
         """
 }
 
-def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_3ddeba0'
+def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_80afc86'
 def WAKHAN_BIN = 50000
 
 process wakhanHapcorrect {
@@ -289,14 +289,15 @@ process wakhanHapcorrect {
         path tumorSmallPhasedVcf
 
     output:
-        path 'wakhan_out/*', arity: '3..*', emit: wakhanHPOutput
-        path 'wakhan_out/phasing_output/rephased.vcf.gz', emit: rephasedVcf
+        path 'wakhan_hapcorrect/*', arity: '3..*', emit: wakhanHPOutput
+        path 'wakhan_hapcorrect/phasing_output/rephased.vcf.gz', emit: rephasedVcf
 
     script:
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size ${WAKHAN_BIN}  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_hapcorrect --bin-size ${WAKHAN_BIN}  --phaseblocks-enable \
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
@@ -314,18 +315,19 @@ process wakhanCNA {
         path tumorSmallPhasedVcf
         path severusSomaticVcf
 	    path hapcorrect_out, stageAs: "hapcorrect_input/*"
+        path cosmic
 
     output:
         path "wakhan_cna", emit: wakhanOutput
 
     script:
-        def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
+        def cosmic_arg = cosmic.name != 'NOFILE' ? "--cancer-genes ${cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
         cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
           --genome-name Sample --use-sv-haplotypes --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
-          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic_arg}
 	"""
 }
 
@@ -344,14 +346,15 @@ process wakhanHapcorrectTN {
         path tumorSmallPhasedVcf
 
     output:
-        path 'wakhan_out/*', arity: '3..*', emit: wakhanHPOutput
-        path 'wakhan_out/phasing_output/rephased.vcf.gz', emit: rephasedVcf
+        path 'wakhan_hapcorrect/*', arity: '3..*', emit: wakhanHPOutput
+        path 'wakhan_hapcorrect/phasing_output/rephased.vcf.gz', emit: rephasedVcf
 
     script:
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size ${WAKHAN_BIN}  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_hapcorrect --bin-size ${WAKHAN_BIN}  --phaseblocks-enable \
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
@@ -369,18 +372,19 @@ process wakhanCNATN {
         path tumorSmallPhasedVcf
         path severusSomaticVcf
         path hapcorrect_out, stageAs: "hapcorrect_input/*"
+        path cosmic
 
     output:
         path "wakhan_cna", emit: wakhanOutput
 
     script:
-        def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
+        def cosmic_arg = cosmic.name != 'NOFILE' ? "--cancer-genes ${cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
         cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
           --use-sv-haplotypes --genome-name Sample --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
-          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic_arg}
 	"""
 }
 
