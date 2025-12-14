@@ -102,7 +102,7 @@ process haplotagWhatshap {
         path 'haplotagged.bam', emit: bam
         path 'haplotagged.bam.bai', emit: bam_idx
 
-	    script:
+    script:
         """
         tabix ${phasedVcf}
         whatshap haplotag --reference ${reference} ${phasedVcf} ${alignedBam} -o 'haplotagged.bam' --ignore-read-groups \
@@ -111,110 +111,117 @@ process haplotagWhatshap {
         """
 }
 
+def MODKIT_DOCKER = 'docker://mkolmogo/modkit:0.4.1'
+
 process modkitDMR{
-        conda 'bioconda::ont-modkit'
+        container MODKIT_DOCKER
         cpus 28
         memory '64 G'
         time '10.h'
 
         input:
-                path tumorBed
-		path tumorBedIdx
-		path normalBed
-		path normalBedIdx
-                path reference
-                path referenceIdx
-                path cpgbed
+            path tumorBed
+		    path tumorBedIdx
+		    path normalBed
+		    path normalBedIdx
+            path reference
+            path referenceIdx
+            path cpgbed
 
         output:
                 path 'dmr.bed', emit:DMRbed
         script:
-        """
-		modkit dmr pair -a ${tumorBed} -b ${normalBed} -o ./dmr.bed -r ${cpgbed} --ref ${reference} --base C --threads ${task.cpus}
-                
-        """
+            """
+            modkit dmr pair -a ${tumorBed} -b ${normalBed} -o ./dmr.bed -r ${cpgbed} --ref ${reference} --base C --threads ${task.cpus}
+            """
 }
 
 process modkitStats{
-        conda 'bioconda::ont-modkit'
+        container MODKIT_DOCKER
         cpus 28
         memory '64 G'
         time '10.h'
 
         input:
-                path tumorBed
-		path tumorBedIdx
-                path reference
-                path referenceIdx
-                path cpgbed
+            path tumorBed
+		    path tumorBedIdx
+            path reference
+            path referenceIdx
+            path cpgbed
 
         output:
         	path "${tumorBed.simpleName}.stats.tsv", emit: stats
-	script:
-        """
-		modkit stats ${tumorBed} --regions ${cpgbed} -o ./${tumorBed.simpleName}.stats.tsv --mod-codes "h,m" --threads ${task.cpus}
-             
-        """
+
+        script:
+            """
+            modkit stats ${tumorBed} --regions ${cpgbed} -o ./${tumorBed.simpleName}.stats.tsv --mod-codes "h,m" --threads ${task.cpus}
+            """
 }
 
 process modkitPileupAllele{
-        conda 'bioconda::ont-modkit bioconda::samtools bioconda::htslib'
+        container MODKIT_DOCKER
         cpus 28
         memory '64 G'
         time '10.h'
 
         input:
-                path tumorBam
-                path tumorBamIdx
-                path reference
-                path referenceIdx
-	output:
-                path 'haplotagged_1.bed.gz', emit:HP1bed
-                path 'haplotagged_2.bed.gz', emit:HP2bed
-                path 'haplotagged_1.bed.gz.tbi', emit:HP1bed_idx
-                path 'haplotagged_2.bed.gz.tbi', emit:HP2bed_idx
+            path tumorBam
+            path tumorBamIdx
+            path reference
+            path referenceIdx
+
+	    output:
+            path 'haplotagged_1.bed.gz', emit:HP1bed
+            path 'haplotagged_2.bed.gz', emit:HP2bed
+            path 'haplotagged_1.bed.gz.tbi', emit:HP1bed_idx
+            path 'haplotagged_2.bed.gz.tbi', emit:HP2bed_idx
+
         script:
-        """
-                modkit pileup ${tumorBam} . -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering --partition-tag HP --prefix haplotagged
-                bgzip haplotagged_1.bed
-                tabix -p bed haplotagged_1.bed.gz
-                bgzip haplotagged_2.bed
-                tabix -p bed haplotagged_2.bed.gz
-        """     
+            """
+            modkit pileup ${tumorBam} . -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering --partition-tag HP --prefix haplotagged
+            bgzip haplotagged_1.bed
+            tabix -p bed haplotagged_1.bed.gz
+            bgzip haplotagged_2.bed
+            tabix -p bed haplotagged_2.bed.gz
+            """     
 }
 
 
 process modkitPileup{
-        conda 'bioconda::ont-modkit bioconda::samtools bioconda::htslib bioconda::bedtools'
+        container MODKIT_DOCKER
         cpus 28
         memory '64 G'
         time '10.h'
 
         input:
-                path tumorBam
-                path tumorBamIdx
-                path reference
-                path referenceIdx
-		path cpgbed
-	output:
-                path 'pileup.bed.gz', emit:pileupbed
-                path 'pileup.bed.gz.tbi', emit:pileupbed_idx
-		path 'pileup_cpg_subset.bed.gz',emit:pileupbed_subset
-		path 'pileup_cpg_subset.bed.gz.tbi', emit:pileupbed_subset_idx
+            path tumorBam
+            path tumorBamIdx
+            path reference
+            path referenceIdx
+		    path cpgbed
+
+	    output:
+            path 'pileup.bed.gz', emit:pileupbed
+            path 'pileup.bed.gz.tbi', emit:pileupbed_idx
+            path 'pileup_cpg_subset.bed.gz',emit:pileupbed_subset
+            path 'pileup_cpg_subset.bed.gz.tbi', emit:pileupbed_subset_idx
+
         script:
-        """
-                modkit pileup ${tumorBam} pileup.bed -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering
-                bgzip pileup.bed
-                tabix -p bed pileup.bed.gz
-		bedtools intersect -a pileup.bed.gz -b ${cpgbed} -wa -wb > pileup_cpg.bed 
-		cut -f1-5,12,19-21 pileup_cpg.bed > pileup_cpg_subset.bed
-		bgzip pileup_cpg_subset.bed
-                tabix -p bed pileup_cpg_subset.bed.gz
-        """     
+            """
+            modkit pileup ${tumorBam} pileup.bed -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering
+            bgzip pileup.bed
+            tabix -p bed pileup.bed.gz
+            bedtools intersect -a pileup.bed.gz -b ${cpgbed} -wa -wb > pileup_cpg.bed 
+            cut -f1-5,12,19-21 pileup_cpg.bed > pileup_cpg_subset.bed
+            bgzip pileup_cpg_subset.bed
+            tabix -p bed pileup_cpg_subset.bed.gz
+            """     
 }
 
+def SEVERUS_DOCKER = 'docker://gokcekeskus/severus:v1_6'
+
 process severusTumorOnly {
-    container 'docker://gokcekeskus/severus:v1_6'
+    container SEVERUS_DOCKER
     cpus 28
     memory '128 G'
     time '8.h'
@@ -239,7 +246,7 @@ process severusTumorOnly {
 }
 
 process severusTumorNormal {
-    container 'docker://gokcekeskus/severus:v1_6'
+    container SEVERUS_DOCKER
     cpus 28
     memory '128 G'
     time '8.h'
@@ -264,10 +271,13 @@ process severusTumorNormal {
         """
 }
 
+def WAKHAN_DOCKER = 'mkolmogo/wakhan:dev_3ddeba0'
+def WAKHAN_BIN = 50000
+
 process wakhanHapcorrect {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:60c7c44'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -286,13 +296,13 @@ process wakhanHapcorrect {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_out --bin-size ${WAKHAN_BIN}  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
 process wakhanCNA {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:60c7c44'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -303,25 +313,26 @@ process wakhanCNA {
         path reference
         path tumorSmallPhasedVcf
         path severusSomaticVcf
-	path hapcorrect_out
+	    path hapcorrect_out, stageAs: "hapcorrect_input/*"
 
     output:
-        path "wakhan_out", emit: wakhanOutput
+        path "wakhan_cna", emit: wakhanOutput
+
     script:
+        def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
+        cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --use-sv-haplotypes --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
-        mkdir -p wakhan_out
-	find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
-	find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
+          --genome-name Sample --use-sv-haplotypes --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
 	"""
 }
 
 process wakhanHapcorrectTN {
     def genomeName = "Sample"
 
-    container 'docker://gokcekeskus/wakhan:60c7c44'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -340,13 +351,13 @@ process wakhanHapcorrectTN {
         """
         tabix ${tumorSmallPhasedVcf}
         wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --genome-name Sample --out-dir-plots wakhan_out --bin-size 10000  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
+          --genome-name Sample --out-dir-plots wakhan_out --bin-size ${WAKHAN_BIN}  --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
 process wakhanCNATN {
     def genomeName = "Sample"
-    container 'docker://gokcekeskus/wakhan:60c7c44'
+    container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
     time '14.h'
@@ -357,27 +368,29 @@ process wakhanCNATN {
         path reference
         path tumorSmallPhasedVcf
         path severusSomaticVcf
-	path hapcorrect_out
+        path hapcorrect_out, stageAs: "hapcorrect_input/*"
 
     output:
-        path "wakhan_out", emit: wakhanOutput
+        path "wakhan_cna", emit: wakhanOutput
+
     script:
+        def cosmic = params.cosmic ? "--cancer-genes ${params.cosmic}" : ""
         """
         tabix ${tumorSmallPhasedVcf}
+        cp -rL hapcorrect_input wakhan_cna
         wakhan cna --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --normal-phased-vcf ${tumorSmallPhasedVcf} \
-          --use-sv-haplotypes --genome-name Sample --out-dir-plots . --bin-size 10000  --breakpoints ${severusSomaticVcf} --phaseblocks-enable --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
-        mkdir -p wakhan_out
-        find . -mindepth 1 -maxdepth 1 -type d ! -name 'wakhan_out' -print0 | xargs -0 -I {} mv "{}" wakhan_out/
-        find . -maxdepth 1 -type f -name "*.html" -print0 | xargs -0 -I {} mv "{}" wakhan_out/
+          --use-sv-haplotypes --genome-name Sample --out-dir-plots wakhan_cna --bin-size ${WAKHAN_BIN}  --breakpoints ${severusSomaticVcf} --phaseblocks-enable \
+          --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable ${cosmic}
 	"""
 }
 
+def DEEPSOMATIC_DOCKER = 'docker://google/deepsomatic:1.9.0'
 
 process deepsomaticTumorOnly {
     def genomeName = "Sample"
     def outDir = "deepsomatic_out"
 
-    container 'docker://google/deepsomatic:1.7.0'
+    container DEEPSOMATIC_DOCKER
     cpus 56
     memory '240 G'
     time '48.h'
@@ -399,7 +412,7 @@ process deepsomaticTumorOnly {
 }
 
 process deepsomaticTumorNormal {
-    container 'docker://google/deepsomatic:1.7.0'
+    container DEEPSOMATIC_DOCKER
     cpus 56
     memory '240 G'
     time '48.h'

@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl     = 2
-nextflow.preview.output = true   
+//nextflow.preview.output = true   //uncomment for for 25.04.2
 
 
 include { callClair3; phaseLongphase; severusTumorNormal; wakhanCNATN; wakhanHapcorrectTN; modkitDMR; modkitPileup; modkitPileupAllele; deepsomaticTumorNormal } from "./processes/processes.nf"
@@ -25,19 +25,20 @@ process REF_INDEX {
   """
 }
 
-// ---------- user params ----------
-params.readsT         = params.readsT          ?: null
-params.readsN         = params.readsN          ?: null   
-params.prealignedBam  = params.prealignedBam   ?: null
-params.prealignedBamN = params.prealignedBamN  ?: null     
-params.reference      = params.reference       ?: null
-params.vntr           = params.vntr            ?: null
-params.clair3_model   = params.clair3_model    ?: null
-params.cpgs           = params.cpgs            ?: null
-params.bam            = params.bam             ?: null          // used when --alignment 'false'
-params.bai            = params.bai             ?: null          // used when --alignment 'false'
-params.mode           = params.mode            ?: 'all'         // all | sv_cna | sv_cna_dmr
-params.alignment      = params.alignment       ?: 'true'        // 'true' | 'false'
+// ---------- default user params ----------
+params.readsT         = null
+params.readsN         = null   
+params.prealignedBam  = null
+params.prealignedBamN = null     
+params.reference      = null
+params.vntr           = null
+params.clair3_model   = null
+params.cpgs           = null
+params.bam            = null          // used when --alignment 'false'
+params.bai            = null          // used when --alignment 'false'
+params.mode           = 'all'         // all | sv_cna | sv_cna_dmr
+params.alignment      = 'true'        // 'true' | 'false'
+params.cosmic         = null
 
 // ---------- subworkflow with alignment toggle + modes ----------
 workflow tumorNormalOntWorkflow {
@@ -139,7 +140,7 @@ workflow tumorNormalOntWorkflow {
     def wakhanDataOutputCh = Channel.empty()
     def wakhanFullOutputCh  = Channel.empty()
     def hp1Ch = Channel.empty(); def hp2Ch = Channel.empty()
-    def pileCh = Channel.empty(); def dmrCh = Channel.empty()
+    def pileCh = Channel.empty(); def pile2Ch = Channel.empty(); def dmrCh = Channel.empty()
     def s1Ch = Channel.empty();  def s2Ch  = Channel.empty(); def s3Ch = Channel.empty()
     def deepSomCh = Channel.empty()
 
@@ -233,13 +234,15 @@ workflow tumorNormalOntWorkflow {
 
     // 9) DeepSomatic only in 'all'
     if (RUN_DEEPSOM) {
-      deepsomaticTumorOnly(
+      deepsomaticTumorNormal(
         bamCh,
         baiCh,
+        NbamCh,
+        NbaiCh,
         reference,
         refIdxCh
       )
-      deepSomCh = deepsomaticTumorOnly.out.deepsomaticOutput
+      deepSomCh = deepsomaticTumorNormal.out.deepsomaticOutput
     }
 
   emit:
@@ -324,24 +327,24 @@ workflow {
     )
 
     publish:
-	phasedVcf              = out.phasedVcf
-	rephasedVcf            = out.rephasedVcf
-	haplotaggedBam         = out.haplotaggedBam
-	haplotaggedBamidx      = out.haplotaggedBamidx
-	haplotaggedBamN        = out.haplotaggedBamN
-	haplotaggedBamidxN     = out.haplotaggedBamidxN
-	severusFullOutput      = out.severusFullOutput
-	wakhanFullOutput       = out.wakhanFullOutput
-    wakhanDataOutput       = out.wakhanDataOutput
-	deepsomaticOutput      = out.deepsomaticOutput
-	modkitPileupAlleleBED1 = out.modkitPileupAlleleBED1
-	modkitPileupAlleleBED2 = out.modkitPileupAlleleBED2
-	modkitPileupOut        = out.modkitPileupOut
-	modkitPileupClean      = out.modkitPileup2Out
-	modkitDMROut           = out.modkitDMROut
-	modkitStatsOut         = out.modkitStatsOut
-	modkitStats2Out        = out.modkitStats2Out
-	modkitStats3Out        = out.modkitStats3Out
+        phasedVcf              = out.phasedVcf
+        rephasedVcf            = out.rephasedVcf
+        haplotaggedBam         = out.haplotaggedBam
+        haplotaggedBamidx      = out.haplotaggedBamidx
+        haplotaggedBamN        = out.haplotaggedBamN
+        haplotaggedBamidxN     = out.haplotaggedBamidxN
+        severusFullOutput      = out.severusFullOutput
+        wakhanFullOutput       = out.wakhanFullOutput
+        wakhanDataOutput       = out.wakhanDataOutput
+        deepsomaticOutput      = out.deepsomaticOutput
+        modkitPileupAlleleBED1 = out.modkitPileupAlleleBED1
+        modkitPileupAlleleBED2 = out.modkitPileupAlleleBED2
+        modkitPileupOut        = out.modkitPileupOut
+        modkitPileupClean      = out.modkitPileup2Out
+        modkitDMROut           = out.modkitDMROut
+        modkitStatsOut         = out.modkitStatsOut
+        modkitStats2Out        = out.modkitStats2Out
+        modkitStats3Out        = out.modkitStats3Out
 	
 }
   output {
