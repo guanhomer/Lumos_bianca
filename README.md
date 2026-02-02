@@ -21,14 +21,14 @@ Currently, the pipeline includes the following steps:
 
 ```bash
 module load nextflow/25.10.0
-nextflow run tumorNormalONT.nf   --tumor_reads tumor.bam   --normal_reads normal.bam   --reference hg38.fasta   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
+nextflow run tumorNormalONT.nf   --reads_tumor tumor.bam   --reads_normal normal.bam   --reference hg38.fasta   --vntr vntr.bed   --clair3_model clair3_models/ont --cpgs cpgs.bed
 ```
 
 ### Tumor-Only Run
 
 ```bash
 module load nextflow/25.10.0
-nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vntr vntr.bed   --sv_pon PoN_1000G_hg38.tsv.gz   --clair3_model clair3_models/ont --cpgs cpgs.bed
+nextflow run tumorOnlyONT.nf   --reads_tumor tumor.bam   --reference hg38.fasta   --vntr vntr.bed   --sv_pon PoN_1000G_hg38.tsv.gz   --clair3_model clair3_models/ont --cpgs cpgs.bed
 ```
 
 > **Tip:** Always run inside an interactive session or with `sbatch` — **not** on the Biowulf head node.  
@@ -40,14 +40,14 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 ### Tumor–Normal Only
 
 ```
---normal_reads  Path to normal BAM file (must be indexed)
---tumor_reads   Path to tumor BAM file (must be indexed)
+--reads_normal  Path to normal reads (fastq or bam)
+--reads_tumor   Path to tumor reads (fastq or bam)
 ```
 
 ### Tumor-Only Only
 
 ```
---reads         Path to tumor BAM file (must be indexed)
+--reads_tumor   Path to tumor reads (fastq or bam)
 --sv_pon        Panel of Normals file (e.g. ./annot/PoN_1000G_hg38_extended.tsv.gz)
 ```
 
@@ -65,7 +65,7 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 --aligned_input true --aligned_tumor BAM --aligned_tumor_bai BAI [--aligne_normal BAM --aligned_normal_bai BAI]
 ```
 
-instead of --normal_reads / tumor_reads
+instead of `--reads_normal` / `--reads_tumor`
 
 ---
 

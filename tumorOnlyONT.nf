@@ -9,41 +9,32 @@ include { alignMinimap2; callClair3; phaseLongphase; deepsomaticTumorOnly;
 include { modkitStats as modkitStats  } from "./processes/processes.nf"
 include { modkitStats as modkitStats2 } from "./processes/processes.nf"
 include { modkitStats as modkitStats3 } from "./processes/processes.nf"
+include { fastaIndex as fastaIndex } from "./processes/processes.nf"
 
-
-process REF_INDEX {
-  tag "${reference?.name}"
-  input:
-    path reference
-  output:
-    path "${reference}.fai", emit: ref_idx
-  script:
-  """
-  samtools faidx ${reference}
-  """
-}
 
 // ---------- default user params ----------
-params.reads = null
+params.reads_tumor = null
 params.reference = null
 params.vntr = null
 params.sv_pon = null
 params.clair3_model = null
 params.cpgs = null
-params.bam = null          // used when --alignment 'false'
-params.bai = null          // used when --alignment 'false'
-params.mode = 'all'         // all | sv_cna | sv_cna_dmr
-params.alignment = 'true'        // 'true' | 'false'
 params.cosmic = null
+
+params.mode = 'all'         // all | sv_cna | sv_cna_dmr
+
+params.aligned_input = 'false'        // 'true' | 'false'
+params.aligned_tumor = null
+params.aligned_tumor_bai = null
 
 // ---------- subworkflow with alignment toggle + modes ----------
 workflow tumorOnlyOntWorkflow {
 
   take:
-    reads               // (sample, fastq) tuples (used only if alignment == 'true')
+    reads_tumor               // (sample, fastq) tuples (used only if alignment == 'true')
     reference           // fasta
-    prealignedBam       // BAM (used only if alignment == 'false')
-    prealignedBai       // BAI (used only if alignment == 'false')
+    alignedTumor       // BAM (used only if alignment == 'false')
+    alignedTumorBai       // BAI (used only if alignment == 'false')
     vntrAnnotation
     svPanelOfNormals
     clair3Model
@@ -57,28 +48,26 @@ workflow tumorOnlyOntWorkflow {
     def RUN_DEEPSOM = (params.mode == 'all')
 
     // Unify BAM/BAI/REF_IDX depending on alignment mode
-    Channel
-      .value(params.alignment.toString().toLowerCase() == 'true')
-      .set { ALIGN_FLAG }
+    def alignTrue = params.aligned_input.toString().toLowerCase() == 'false'
 
     // Defaults
     def bamCh
     def baiCh
     def refIdxCh
 
-    if (ALIGN_FLAG.first()) {
+    if (alignTrue) {
       // Align from reads
-      alignMinimap2(reference, reads.collect())
+      alignMinimap2(reference, reads_tumor.collect())
       bamCh    = alignMinimap2.out.bam
       baiCh    = alignMinimap2.out.bam_idx
       refIdxCh = alignMinimap2.out.ref_idx
     }
     else {
       // Use pre-aligned BAM/BAI; ensure we have a fasta index
-      REF_INDEX(reference)
-      bamCh    = prealignedBam
-      baiCh    = prealignedBai
-      refIdxCh = REF_INDEX.out.ref_idx
+      fastaIndex(reference)
+      bamCh    = alignedTumor
+      baiCh    = alignedTumorBai
+      refIdxCh = fastaIndex.out.ref_idx
     }
 
     // 2) Clair3 (requires BAM/BAI/REF/REF_IDX)
@@ -263,26 +252,29 @@ workflow {
     if (!params.clair3_model) missing << '--clair3_model'
     if (!params.cpgs)         missing << '--cpgs'
 
-    def alignTrue = params.alignment.toString().toLowerCase() == 'true'
+    def alignTrue = params.aligned_input.toString().toLowerCase() == 'false'
     if (alignTrue) {
-      if (!params.reads) missing << '--reads'
+      if (!params.reads_tumor) missing << '--reads_tumor'
     } else {
-      if (!params.bam) missing << '--bam'
-      if (!params.bai) missing << '--bai'
+      if (!params.aligned_tumor) missing << '--aligned_tumor'
+      if (!params.aligned_tumor_bai) missing << '--aligned_tumor_bai'
     }
     if (missing) error "Missing required arguments: ${missing.join(', ')}"
 
-    log.info "Mode: ${params.mode} | Alignment: ${params.alignment}"
+    log.info "Mode: ${params.mode} | Pre-aligned input: ${params.aligned_input}"
 
     
     // Build channels for whichever path we use
     reads_ch = alignTrue
-       ? Channel.fromPath(params.reads.split(" ").toList(), checkIfExists: true)
+       ? Channel.fromPath(params.reads_tumor.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
     reads_ch.view{it -> "Input reads: $it"}
     
-    pre_bam_ch = !alignTrue ? Channel.fromPath(params.bam, checkIfExists:true) : Channel.empty()
-    pre_bai_ch = !alignTrue ? Channel.fromPath(params.bai, checkIfExists:true) : Channel.empty()
+    pre_bam_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor, checkIfExists:true) : Channel.empty()
+    pre_bai_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor_bai, checkIfExists:true) : Channel.empty()
+
+    pre_bam_ch.view { "Tumor BAM: $it" }
+    pre_bai_ch.view { "Tumor BAI: $it" }
 
     ref_ch    = Channel.fromPath(params.reference,    checkIfExists:true)
     vntr_ch   = Channel.fromPath(params.vntr,         checkIfExists:true)

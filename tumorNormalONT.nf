@@ -280,8 +280,8 @@ workflow {
 
     def alignTrue = params.aligned_input.toString().toLowerCase() == 'false'
     if (alignTrue) {
-      if (!params.tumor_reads) missing << '--tumor_reads'
-	  if (!params.normal_reads) missing << '--normal_reads'
+      if (!params.reads_tumor) missing << '--reads_tumor'
+	  if (!params.reads_normal) missing << '--reads_normal'
 	  
     } else {
       if (!params.aligned_tumor) missing << '--aligned_tumor'
@@ -296,12 +296,12 @@ workflow {
     
     // Build channels for whichever path we use
     readsT_ch = alignTrue
-       ? Channel.fromPath(params.tumor_reads.split(" ").toList(), checkIfExists: true)
+       ? Channel.fromPath(params.reads_tumor.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
     readsT_ch.view{it -> "Tumor reads: $it"}
 	
     readsN_ch = alignTrue
-       ? Channel.fromPath(params.normal_reads.split(" ").toList(), checkIfExists: true)
+       ? Channel.fromPath(params.reads_normal.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
     readsN_ch.view{it -> "Normal reads: $it"}
     
