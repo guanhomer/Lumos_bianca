@@ -30,6 +30,24 @@ process alignMinimap2 {
         samtools faidx ${ref}
         """
 }   
+
+
+process fastaIndex {
+  tag "${reference?.name}"
+  container 'docker://quay.io/jmonlong/minimap2_samtools:v2.24_v1.16.1'
+  cpus 1
+  memory '4G'
+  executor 'local'
+
+  input:
+    path reference
+  output:
+    path "${reference}.fai", emit: ref_idx
+  script:
+  """
+  samtools faidx ${reference}
+  """
+}
     
 process callClair3 {
     container 'docker://hkubal/clair3:v1.0.11'

@@ -6,6 +6,7 @@ nextflow.enable.dsl     = 2
 include { callClair3; phaseLongphase; severusTumorNormal; wakhanCNATN; wakhanHapcorrectTN; modkitDMR; modkitPileup; modkitPileupAllele; deepsomaticTumorNormal } from "./processes/processes.nf"
 include { alignMinimap2 as alignTumor } from "./processes/processes.nf"
 include { alignMinimap2 as alignNormal } from "./processes/processes.nf"
+include { fastaIndex as fastaIndex } from "./processes/processes.nf"
 include { haplotagWhatshap as haplotagNormal } from "./processes/processes.nf"
 include { haplotagWhatshap as haplotagTumor } from "./processes/processes.nf"
 include { modkitStats as modkitStats  } from "./processes/processes.nf"
@@ -13,32 +14,25 @@ include { modkitStats as modkitStats2 } from "./processes/processes.nf"
 include { modkitStats as modkitStats3 } from "./processes/processes.nf"
 
 
-process REF_INDEX {
-  tag "${reference?.name}"
-  input:
-    path reference
-  output:
-    path "${reference}.fai", emit: ref_idx
-  script:
-  """
-  samtools faidx ${reference}
-  """
-}
+
 
 // ---------- default user params ----------
-params.readsT         = null
-params.readsN         = null   
-params.prealignedBam  = null
-params.prealignedBamN = null     
+params.reads_tumor    = null
+params.reads_normal   = null   
 params.reference      = null
 params.vntr           = null
 params.clair3_model   = null
 params.cpgs           = null
-params.bam            = null          // used when --alignment 'false'
-params.bai            = null          // used when --alignment 'false'
-params.mode           = 'all'         // all | sv_cna | sv_cna_dmr
-params.alignment      = 'true'        // 'true' | 'false'
 params.cosmic         = null
+
+params.mode           = 'all'         // all | sv_cna | sv_cna_dmr
+
+params.aligned_input = 'false'        // 'true' | 'false'
+params.aligned_tumor  = null
+params.aligned_normal = null     
+params.aligned_tumor_bai  = null
+params.aligned_normal_bai = null     
+
 
 // ---------- subworkflow with alignment toggle + modes ----------
 workflow tumorNormalOntWorkflow {
@@ -46,10 +40,10 @@ workflow tumorNormalOntWorkflow {
   take:
     readsT               // (Tumor sample, fastq) tuples (used only if alignment == 'true')
     readsN               // (Normal sample, fastq) tuples (used only if alignment == 'true')
-    prealignedBam       // BAM (used only if alignment == 'false')
-    prealignedBai       // BAI (used only if alignment == 'false')
-    NprealignedBam       // BAM (used only if alignment == 'false')
-    NprealignedBai       // BAI (used only if alignment == 'false')
+    alignedTumor       // BAM (used only if alignment == 'false')
+    alignedTumorBai       // BAI (used only if alignment == 'false')
+    alignedNormal       // BAM (used only if alignment == 'false')
+    alignedNormalBai       // BAI (used only if alignment == 'false')
     reference           // fasta
     vntrAnnotation
     clair3Model
@@ -63,16 +57,14 @@ workflow tumorNormalOntWorkflow {
     def RUN_DEEPSOM = (params.mode == 'all')
 
     // Unify BAM/BAI/REF_IDX depending on alignment mode
-    Channel
-      .value(params.alignment.toString().toLowerCase() == 'true')
-      .set { ALIGN_FLAG }
+    def alignTrue = params.aligned_input.toString().toLowerCase() == 'false'
 
     // Defaults
     def bamCh
     def baiCh
     def refIdxCh
 
-    if (ALIGN_FLAG.first()) {
+    if (alignTrue) {
       // Align from reads
       alignTumor(reference, readsT.collect())
       bamCh    = alignTumor.out.bam
@@ -85,12 +77,12 @@ workflow tumorNormalOntWorkflow {
     }
     else {
       // Use pre-aligned BAM/BAI; ensure we have a fasta index
-      REF_INDEX(reference)
-      bamCh    = prealignedBam
-      baiCh    = prealignedBai
-      NbamCh    = NprealignedBam
-      NbaiCh    = NprealignedBai
-      refIdxCh = REF_INDEX.out.ref_idx
+      fastaIndex(reference)
+      bamCh    = alignedTumor
+      baiCh    = alignedTumorBai
+      NbamCh    = alignedNormal
+      NbaiCh    = alignedNormalBai
+      refIdxCh = fastaIndex.out.ref_idx
     }
 
     // 2) Clair3 (requires BAM/BAI/REF/REF_IDX)
@@ -286,38 +278,42 @@ workflow {
     if (!params.clair3_model) missing << '--clair3_model'
     if (!params.cpgs)         missing << '--cpgs'
 
-    def alignTrue = params.alignment.toString().toLowerCase() == 'true'
+    def alignTrue = params.aligned_input.toString().toLowerCase() == 'false'
     if (alignTrue) {
       if (!params.tumor_reads) missing << '--tumor_reads'
 	  if (!params.normal_reads) missing << '--normal_reads'
 	  
     } else {
-      if (!params.tumor_bam) missing << '--tumor_bam'
-      if (!params.tumor_bai) missing << '--tumor_bai'
-
-      if (!params.normal_bam) missing << '--tumor_bam'
-      if (!params.normal_bai) missing << '--tumor_bai'
+      if (!params.aligned_tumor) missing << '--aligned_tumor'
+      if (!params.aligned_tumor_bai) missing << '--aligned_tumor_bai'
+      if (!params.aligned_normal) missing << '--aligned_normal'
+      if (!params.aligned_normal_bai) missing << '--aligned_normal_bai'
     }
     if (missing) error "Missing required arguments: ${missing.join(', ')}"
 
-    log.info "Mode: ${params.mode} | Alignment: ${params.alignment}"
+    log.info "Mode: ${params.mode} | Pre-aligned input: ${params.aligned_input}"
 
     
     // Build channels for whichever path we use
     readsT_ch = alignTrue
        ? Channel.fromPath(params.tumor_reads.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
-    readsT_ch.view{it -> "Input reads: $it"}
+    readsT_ch.view{it -> "Tumor reads: $it"}
 	
     readsN_ch = alignTrue
        ? Channel.fromPath(params.normal_reads.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
+    readsN_ch.view{it -> "Normal reads: $it"}
     
-    pre_bam_ch = !alignTrue ? Channel.fromPath(params.bam, checkIfExists:true) : Channel.empty()
-    pre_bai_ch = !alignTrue ? Channel.fromPath(params.bai, checkIfExists:true) : Channel.empty()
-	
-    pre_bamN_ch = !alignTrue ? Channel.fromPath(params.normal_bam, checkIfExists:true) : Channel.empty()
-    pre_baiN_ch = !alignTrue ? Channel.fromPath(params.normal_bai, checkIfExists:true) : Channel.empty()
+    pre_bam_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor, checkIfExists:true) : Channel.empty()
+    pre_bai_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor_bai, checkIfExists:true) : Channel.empty()
+    pre_bamN_ch = !alignTrue ? Channel.fromPath(params.aligned_normal, checkIfExists:true) : Channel.empty()
+    pre_baiN_ch = !alignTrue ? Channel.fromPath(params.aligned_normal_bai, checkIfExists:true) : Channel.empty()
+
+    pre_bam_ch.view { "Tumor BAM: $it" }
+    pre_bai_ch.view { "Tumor BAI: $it" }
+    pre_bamN_ch.view { "Normal BAM: $it" }
+    pre_baiN_ch.view { "Normal BAI: $it" }
 
     ref_ch    = Channel.fromPath(params.reference,    checkIfExists:true)
     vntr_ch   = Channel.fromPath(params.vntr,         checkIfExists:true)

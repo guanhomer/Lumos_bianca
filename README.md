@@ -60,6 +60,13 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 --cpgs          CpG island BED file required in sv_cna_dmr and all modes (e.g. ./annot/hg38_cpg_cleaned.bed)
 ```
 
+### Pre-existing bam alignment, use:
+```
+--aligned_input true --aligned_tumor BAM --aligned_tumor_bai BAI [--aligne_normal BAM --aligned_normal_bai BAI]
+```
+
+instead of --normal_reads / tumor_reads
+
 ---
 
 ## ⚙️ Optional Parameters
@@ -71,11 +78,6 @@ nextflow run tumorOnlyONT.nf   --reads tumor.bam   --reference hg38.fasta   --vn
 --cosmic        Path to COSMIC genes in tsv format for Wakhan visualization
 ```
 
-Pre-existing bam alignment, use:
-```
---alignment false --bam BAM --bai BAI
-```
-instead of --reads
 
 ---
 
