@@ -29,10 +29,10 @@ RUN wget https://github.com/samtools/bcftools/releases/download/${bcftoolsVer}/b
     make && \
     make install
 
-RUN pip3 install pysam pyfaidx numpy pandas plotly ruptures scikit-learn==1.2.0 scipy==1.9.2 vcf_parser kaleido intervaltree
+RUN pip3 install pysam pyfaidx numpy pandas plotly ruptures scikit-learn==1.2.0 scipy==1.9.2 vcf_parser kaleido intervaltree matplotlib
 
 WORKDIR /opt/wakhan
 RUN git clone https://github.com/KolmogorovLab/Wakhan && \
-    cd Wakhan && git checkout 80afc86 && \
+    cd Wakhan && git checkout 418d185 && \
     echo '#!/bin/bash\npython3 /opt/wakhan/Wakhan/wakhan.py "$@"' > /usr/bin/wakhan && \
     chmod +x /usr/bin/wakhan
