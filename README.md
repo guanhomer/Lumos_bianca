@@ -40,14 +40,14 @@ nextflow run tumorOnlyONT.nf   --reads_tumor tumor.bam   --reference hg38.fasta 
 ### Tumor–Normal Only
 
 ```
---reads_normal  Path to normal reads (fastq or bam)
---reads_tumor   Path to tumor reads (fastq or bam)
+--reads_normal  Path to normal reads (unaligned bam)
+--reads_tumor   Path to tumor reads (unaligned bam)
 ```
 
 ### Tumor-Only Only
 
 ```
---reads_tumor   Path to tumor reads (fastq or bam)
+--reads_tumor   Path to tumor reads (unaligned bam)
 --sv_pon        Panel of Normals file (e.g. ./annot/PoN_1000G_hg38_extended.tsv.gz)
 ```
 

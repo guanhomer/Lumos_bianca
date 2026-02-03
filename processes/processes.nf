@@ -14,7 +14,7 @@ process alignMinimap2 {
 
     input:
         path ref
-        path reads
+        path reads, stageAs: "input_reads/*"
     output:
         path 'aligned.bam', emit: bam
         path 'aligned.bam.bai', emit: bam_idx
@@ -22,7 +22,7 @@ process alignMinimap2 {
           
     script:
         """  
-        samtools cat ${reads} | \
+        samtools cat input_reads/* | \
           samtools fastq -TMm,Ml,MM,ML - | \
           minimap2 -ax map-ont -k 17 -t ${task.cpus} -K 1G -y --eqx ${ref} - | \
           samtools sort -@4 -m 4G > aligned.bam
@@ -113,8 +113,8 @@ process haplotagWhatshap {
         path reference
         path referenceIdx
         path phasedVcf
-        path alignedBam
-        path indexedBai
+        path alignedBam, stageAs: "input.bam"
+        path indexedBai, stageAs: "input.bam.bai"
 
     output:
         path 'haplotagged.bam', emit: bam
