@@ -3,6 +3,8 @@
 This Nextflow (v25.10.0) workflow implements a full long-read somatic variant analysis pipeline.  
 It supports tumor–normal and tumor-only configurations, running on [Biowulf](https://hpc.nih.gov/) (Slurm scheduler).  
 
+**NOTE:** The implementation in the main branch is for ONT data, for HiFi input please use the `hifi` branch. 
+
 Currently, the pipeline includes the following steps:
 
 - **Alignment** with minimap2  
