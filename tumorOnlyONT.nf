@@ -2,7 +2,6 @@
 nextflow.enable.dsl     = 2
 //nextflow.preview.output = true   //uncomment for for 25.04.2
 
-
 include { alignMinimap2; callClair3; phaseLongphase; deepsomaticTumorOnly;
           modkitDMR; modkitPileupAllele; modkitPileup;
           severusTumorOnly; haplotagWhatshap; wakhanCNA; wakhanHapcorrect } from "./processes/processes.nf"
@@ -10,6 +9,8 @@ include { modkitStats as modkitStats  } from "./processes/processes.nf"
 include { modkitStats as modkitStats2 } from "./processes/processes.nf"
 include { modkitStats as modkitStats3 } from "./processes/processes.nf"
 include { fastaIndex as fastaIndex } from "./processes/processes.nf"
+
+include { ingress } from "./processes/merge_bams_lumos.nf"
 
 
 // ---------- default user params ----------
@@ -27,8 +28,14 @@ params.aligned_input = 'false'        // 'true' | 'false'
 params.aligned_tumor = null
 params.aligned_tumor_bai = null
 
+// ---------- customize user params ----------
+params.no_dmr = null
+params.aligned_tumor_dir = null
+params.sample = null
+
 // ---------- subworkflow with alignment toggle + modes ----------
-workflow tumorOnlyOntWorkflow {
+//workflow tumorOnlyOntWorkflow {
+workflow TO {
 
   take:
     reads_tumor               // (sample, fastq) tuples (used only if alignment == 'true')
@@ -44,7 +51,8 @@ workflow tumorOnlyOntWorkflow {
   main:
     def RUN_ALL     = (params.mode == 'all')
     def RUN_SV_CNA  = (params.mode in ['all','sv_cna','sv_cna_dmr'])
-    def RUN_DMR     = (params.mode in ['all','sv_cna_dmr'])
+    // def RUN_DMR     = (params.mode in ['all','sv_cna_dmr'])
+    def RUN_DMR     = (params.mode in ['all','sv_cna_dmr']) && !params.no_dmr
     def RUN_DEEPSOM = (params.mode == 'all')
 
     // Unify BAM/BAI/REF_IDX depending on alignment mode
@@ -63,12 +71,50 @@ workflow tumorOnlyOntWorkflow {
       refIdxCh = alignMinimap2.out.ref_idx
     }
     else {
-      // Use pre-aligned BAM/BAI; ensure we have a fasta index
+
+      /*
+       * Case 2:
+       * Pre-aligned input.
+       * Either:
+       *   --aligned_tumor_dir          directory of BAMs to merge/index
+       *   --aligned_tumor    single BAM
+       *   --aligned_tumor_bai single BAI
+       */
+
       fastaIndex(reference)
-      bamCh    = alignedTumor
-      baiCh    = alignedTumorBai
       refIdxCh = fastaIndex.out.ref_idx
+
+      if (params.aligned_tumor_dir) {
+
+        bam_ch = Channel
+          .fromPath("${params.aligned_tumor_dir}/*.bam", checkIfExists: true)
+          .filter { !it.name.endsWith(".bai") }
+
+        bam_ch
+          .collect()
+          .map { bam_list ->
+            if (bam_list.size() == 0) {
+              error "No BAM files found in ${params.bam_dir}"
+            }
+            bam_list
+          }
+          .flatMap { it }
+          .set { checked_bam_ch }
+
+        ingress(checked_bam_ch)
+
+        bamCh = ingress.out.bam
+        baiCh = ingress.out.bai
+
+      } else {
+
+        bamCh = alignedTumor
+        baiCh = alignedTumorBai
+
+      }
     }
+
+    
 
     // 2) Clair3 (requires BAM/BAI/REF/REF_IDX)
     callClair3(
@@ -256,8 +302,34 @@ workflow {
     if (alignTrue) {
       if (!params.reads_tumor) missing << '--reads_tumor'
     } else {
-      if (!params.aligned_tumor) missing << '--aligned_tumor'
+	  /*
+	   * Pre-aligned mode
+	   *
+	   * Accept either:
+	   *   --bam_dir
+	   * or:
+	   *   --aligned_tumor + --aligned_tumor_bai
+	   */
+
+	  if (params.aligned_tumor_dir) {
+		def bam_files = file("${params.aligned_tumor_dir}/*.bam")
+
+		if (!bam_files || bam_files.size() == 0) {
+			missing << "--bam_dir (no BAM files found)"
+		}
+		
+		pre_bam_ch = Channel.empty()
+		pre_bai_ch = Channel.empty()
+	  } else {
+	  if (!params.aligned_tumor) missing << '--aligned_tumor'
       if (!params.aligned_tumor_bai) missing << '--aligned_tumor_bai'
+      
+      pre_bam_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor, checkIfExists:true) : Channel.empty()
+      pre_bai_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor_bai, checkIfExists:true) : Channel.empty()
+      
+      pre_bam_ch.view { "Tumor BAM: $it" }
+      pre_bai_ch.view { "Tumor BAI: $it" }
+	  }
     }
     if (missing) error "Missing required arguments: ${missing.join(', ')}"
 
@@ -269,12 +341,6 @@ workflow {
        ? Channel.fromPath(params.reads_tumor.split(" ").toList(), checkIfExists: true)
        : Channel.empty()
     reads_ch.view{it -> "Input reads: $it"}
-    
-    pre_bam_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor, checkIfExists:true) : Channel.empty()
-    pre_bai_ch = !alignTrue ? Channel.fromPath(params.aligned_tumor_bai, checkIfExists:true) : Channel.empty()
-
-    pre_bam_ch.view { "Tumor BAM: $it" }
-    pre_bai_ch.view { "Tumor BAI: $it" }
 
     ref_ch    = Channel.fromPath(params.reference,    checkIfExists:true)
     vntr_ch   = Channel.fromPath(params.vntr,         checkIfExists:true)
@@ -286,7 +352,8 @@ workflow {
         ? Channel.fromPath(params.cosmic, checkIfExists:true)
         : Channel.fromPath(file('NOFILE'))
 
-    out = tumorOnlyOntWorkflow(
+    //out = tumorOnlyOntWorkflow(
+    out = TO(
       reads_ch, ref_ch, pre_bam_ch, pre_bai_ch, vntr_ch, svpon_ch, clair3_ch, cpgs_ch, cosmic_ch
     )
 

@@ -19,8 +19,10 @@ TUMOR_SAMPLE="$4"
 
 #Change with caution. Optimized for a single exlusive node with 56 CPUs
 #EXAMPLES_THREADS should be divisible by TF_JOBS
-EXAMPLES_THREADS=56
-TF_JOBS=4
+#EXAMPLES_THREADS=56
+#TF_JOBS=4
+EXAMPLES_THREADS="${EXAMPLES_THREADS:-${SLURM_CPUS_PER_TASK:-1}}"
+TF_JOBS="${TF_JOBS:-1}"
 
 INTERMEDIATE=${OUT_DIR}/intermediate
 EXAMPLES=${INTERMEDIATE}/examples
@@ -35,7 +37,8 @@ OUT_DIR=${OUT_DIR%/}
 #may be important to set TMP_DIR in case there are many files generated
 export TMPDIR=${TMP_DIR}
 #by default, biowulf only allwys 1024 file descriptors, which will not be enough, increase.
-ulimit -u 10240 -n 16384
+#ulimit -u 10240 -n 16384
+ulimit -u 10240 -n 16384 || true
 
 ###DeepSomatic stages (you can get these command lines by running run_deepsomatic with --dry_run
 

@@ -6,7 +6,7 @@ nextflow.enable.dsl = 2
  * Align reads using minimap2, sort BAM using samtools, and create BAM index
  */
 process alignMinimap2 {
-
+	tag "${params.sample}"
     container 'docker://quay.io/jmonlong/minimap2_samtools:v2.24_v1.16.1'
     cpus 28
     memory '128 GB'
@@ -50,10 +50,11 @@ process fastaIndex {
 }
     
 process callClair3 {
+	tag "${params.sample}"
     container 'docker://hkubal/clair3:v1.0.11'
     cpus 28
     memory '128 G'
-    time '24.h'
+    time '12.h'
 
     input:
         path alignedBam
@@ -67,11 +68,12 @@ process callClair3 {
 
     
     script:
+        def threads = Math.max(1, task.cpus - 3)
         """
         /opt/bin/run_clair3.sh \
             --bam_fn=${alignedBam} \
             --ref_fn=${reference} \
-            --threads=${task.cpus} \
+            --threads=${threads} \
             --platform="ont" \
             --model_path=${modelPath} \
             --output="clair3_output" \
@@ -79,7 +81,7 @@ process callClair3 {
 }
 
 process phaseLongphase {
-
+	tag "${params.sample}"
     container 'docker://mkolmogo/longphase:1.7.3'
     cpus 10
     memory '64 G'
@@ -97,17 +99,20 @@ process phaseLongphase {
 
     
     script:
+        def threads = Math.max(1, task.cpus - 4)
         """
-        longphase phase -s ${vcf} -b ${alignedBam} -r ${reference} -t ${task.cpus} -o longphase --ont
+        longphase phase -s ${vcf} -b ${alignedBam} -r ${reference} -t ${threads} -o longphase --ont
         bgzip longphase.vcf
         """
 }
 
 process haplotagWhatshap {
+	tag "${params.sample}"
     container 'docker://mkolmogo/whatshap:2.3'
     cpus 8
     memory '64 G'
     time '10.h'
+    // publishDir "${params.outputDir}/bam_phased", mode: "copy"
 
     input:
         path reference
@@ -125,13 +130,14 @@ process haplotagWhatshap {
         tabix ${phasedVcf}
         whatshap haplotag --reference ${reference} ${phasedVcf} ${alignedBam} -o 'haplotagged.bam' --ignore-read-groups \
             --tag-supplementary --skip-missing-contigs --output-threads 4
-        samtools index -@8 haplotagged.bam
+        samtools index -@7 haplotagged.bam
         """
 }
 
 def MODKIT_DOCKER = 'docker://mkolmogo/modkit:0.4.1'
 
 process modkitDMR{
+		tag "${params.sample}"
         container MODKIT_DOCKER
         cpus 28
         memory '64 G'
@@ -149,12 +155,14 @@ process modkitDMR{
         output:
                 path 'dmr.bed', emit:DMRbed
         script:
+            def threads = Math.max(1, task.cpus - 2)
             """
-            modkit dmr pair -a ${tumorBed} -b ${normalBed} -o ./dmr.bed -r ${cpgbed} --ref ${reference} --base C --threads ${task.cpus}
+            modkit dmr pair -a ${tumorBed} -b ${normalBed} -o ./dmr.bed -r ${cpgbed} --ref ${reference} --base C --threads ${threads}
             """
 }
 
 process modkitStats{
+		tag "${params.sample}"
         container MODKIT_DOCKER
         cpus 28
         memory '64 G'
@@ -171,12 +179,14 @@ process modkitStats{
         	path "${tumorBed.simpleName}.stats.tsv", emit: stats
 
         script:
+            def threads = Math.max(1, task.cpus - 2)
             """
-            modkit stats ${tumorBed} --regions ${cpgbed} -o ./${tumorBed.simpleName}.stats.tsv --mod-codes "h,m" --threads ${task.cpus}
+            modkit stats ${tumorBed} --regions ${cpgbed} -o ./${tumorBed.simpleName}.stats.tsv --mod-codes "h,m" --threads ${threads}
             """
 }
 
 process modkitPileupAllele{
+		tag "${params.sample}"
         container MODKIT_DOCKER
         cpus 28
         memory '64 G'
@@ -195,8 +205,9 @@ process modkitPileupAllele{
             path 'haplotagged_2.bed.gz.tbi', emit:HP2bed_idx
 
         script:
+            def threads = Math.max(1, task.cpus - 2)
             """
-            modkit pileup ${tumorBam} . -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering --partition-tag HP --prefix haplotagged
+            modkit pileup ${tumorBam} . -t ${threads} --combine-strands --cpg --ref ${reference} --no-filtering --partition-tag HP --prefix haplotagged
             bgzip haplotagged_1.bed
             tabix -p bed haplotagged_1.bed.gz
             bgzip haplotagged_2.bed
@@ -206,6 +217,7 @@ process modkitPileupAllele{
 
 
 process modkitPileup{
+		tag "${params.sample}"
         container MODKIT_DOCKER
         cpus 28
         memory '64 G'
@@ -225,8 +237,9 @@ process modkitPileup{
             path 'pileup_cpg_subset.bed.gz.tbi', emit:pileupbed_subset_idx
 
         script:
+            def threads = Math.max(1, task.cpus - 2)
             """
-            modkit pileup ${tumorBam} pileup.bed -t ${task.cpus} --combine-strands --cpg --ref ${reference} --no-filtering
+            modkit pileup ${tumorBam} pileup.bed -t ${threads} --combine-strands --cpg --ref ${reference} --no-filtering
             bgzip pileup.bed
             tabix -p bed pileup.bed.gz
             bedtools intersect -a pileup.bed.gz -b ${cpgbed} -wa -wb > pileup_cpg.bed 
@@ -239,6 +252,7 @@ process modkitPileup{
 def SEVERUS_DOCKER = 'docker://gokcekeskus/severus:v1_6'
 
 process severusTumorOnly {
+	tag "${params.sample}"
     container SEVERUS_DOCKER
     cpus 28
     memory '128 G'
@@ -264,6 +278,7 @@ process severusTumorOnly {
 }
 
 process severusTumorNormal {
+	tag "${params.sample}"
     container SEVERUS_DOCKER
     cpus 28
     memory '128 G'
@@ -293,12 +308,13 @@ def WAKHAN_DOCKER = 'mkolmogo/wakhan:0.4.0'
 def WAKHAN_BIN = 50000
 
 process wakhanHapcorrect {
+	tag "${params.sample}"
     def genomeName = "Sample"
 
     container WAKHAN_DOCKER
     cpus 16
     memory '64 G'
-    time '14.h'
+    time '12.h'
 
     input:
         path tumorBam, stageAs: "tumor.bam"
@@ -311,15 +327,17 @@ process wakhanHapcorrect {
         path 'wakhan_hapcorrect/phasing_output/rephased.vcf.gz', emit: rephasedVcf
 
     script:
+        def threads = Math.max(1, task.cpus - 2)
         """
         tabix ${tumorSmallPhasedVcf}
-        wakhan hapcorrect --threads ${task.cpus} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
+        wakhan hapcorrect --threads ${threads} --reference ${reference} --target-bam ${tumorBam} --tumor-phased-vcf ${tumorSmallPhasedVcf} \
           --genome-name Sample --out-dir-plots wakhan_hapcorrect --bin-size ${WAKHAN_BIN}  --phaseblocks-enable \
           --contigs ${params.contigs ?: 'chr1-22,chrX'} --copynumbers-subclonal-enable
         """
 }
 
 process wakhanCNA {
+	tag "${params.sample}"
     def genomeName = "Sample"
     container WAKHAN_DOCKER
     cpus 16
@@ -350,6 +368,7 @@ process wakhanCNA {
 }
 
 process wakhanHapcorrectTN {
+	tag "${params.sample}"
     def genomeName = "Sample"
 
     container WAKHAN_DOCKER
@@ -377,6 +396,7 @@ process wakhanHapcorrectTN {
 }
 
 process wakhanCNATN {
+	tag "${params.sample}"
     def genomeName = "Sample"
     container WAKHAN_DOCKER
     cpus 16
@@ -409,13 +429,14 @@ process wakhanCNATN {
 def DEEPSOMATIC_DOCKER = 'docker://google/deepsomatic:1.9.0'
 
 process deepsomaticTumorOnly {
+	tag "${params.sample}"
     def genomeName = "Sample"
     def outDir = "deepsomatic_out"
 
     container DEEPSOMATIC_DOCKER
-    cpus 56
-    memory '240 G'
-    time '48.h'
+    //cpus 56
+    //memory '240 G'
+    //time '48.h'
     clusterOptions '--exclusive'
 
     input:
@@ -428,12 +449,18 @@ process deepsomaticTumorOnly {
         path 'deepsomatic_out/ds.merged.vcf.gz', emit: deepsomaticOutput
 
     script:
+        def tf_jobs = 2
+        def examples_threads = Math.max(1, task.cpus - tf_jobs - 2)
         """
+		export TF_JOBS=${tf_jobs}
+        export EXAMPLES_THREADS=${examples_threads}
+		
         ds_parallel_tumor_only.sh ${tumorBam} ${reference} ${outDir} ${genomeName}
         """
 }
 
 process deepsomaticTumorNormal {
+	tag "${params.sample}"
     container DEEPSOMATIC_DOCKER
     cpus 56
     memory '240 G'
